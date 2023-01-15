@@ -11,29 +11,26 @@ import java.util.Date;
 public class Player {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
     private Long id;
-    @Column(name = "name")
+
     private String name;
-    @Column(name = "title")
+
     private String title;
     @Enumerated(EnumType.STRING)
-    @Column(name = "race")
     private Race race;
     @Enumerated(EnumType.STRING)
-    @Column(name = "profession")
     private Profession profession;
-    @Column(name = "experience")
+
     private Integer experience;
-    @Column(name = "level")
+
     private Integer level;
-    @Column(name = "untilNextLevel")
+
     private Integer untilNextLevel;
-    @Column(name = "birthday")
+
     @Temporal(TemporalType.DATE)
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date birthday;
-    @Column(name = "banned")
+
     @Type(type = "numeric_boolean")
     private Boolean banned;
 
