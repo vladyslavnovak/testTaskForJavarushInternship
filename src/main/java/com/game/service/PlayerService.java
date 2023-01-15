@@ -6,16 +6,17 @@ import com.game.entity.Profession;
 import com.game.entity.Race;
 import com.game.repository.PlayerCriteriaRepository;
 import com.game.repository.PlayerRepository;
-import com.game.utils.InvalidRequestException;
 import com.game.utils.PlayerValidator;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.Errors;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -174,7 +175,7 @@ public class PlayerService {
     public Player save(Player player, BindingResult bindingResult) {
         playerValidator.validate(player, bindingResult);
         if (bindingResult.hasErrors()) {
-            throw new InvalidRequestException("Invalid request");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         if (Objects.isNull(player.getBanned())) {
             player.setBanned(false);
@@ -191,5 +192,16 @@ public class PlayerService {
         player.setLevel(currLevel);
         player.setUntilNextLevel(untilNextLevel);
         return player;
+    }
+
+    public Player getPlayerById(Integer id) {
+        if (id < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        Optional<Player> playerOptional = playerRepository.findById(id.longValue());
+        if (!playerOptional.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return playerOptional.get();
     }
 }
