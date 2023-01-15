@@ -4,10 +4,12 @@ import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
 import com.game.service.PlayerService;
+import com.game.utils.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -69,7 +71,12 @@ public class PlayerController {
     }
 
     @PostMapping("/players")
-    public Player create(@RequestBody Player player){
-        return null;
+    public ResponseEntity<Player> create(@RequestBody Player player, BindingResult bindingResult) {
+        return new ResponseEntity<>(playerService.save(player, bindingResult), HttpStatus.OK);
+    }
+
+    @ExceptionHandler
+    private ResponseEntity<HttpStatus> exceptionHandler(InvalidRequestException e) {
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 }

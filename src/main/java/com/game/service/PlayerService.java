@@ -6,12 +6,13 @@ import com.game.entity.Profession;
 import com.game.entity.Race;
 import com.game.repository.PlayerCriteriaRepository;
 import com.game.repository.PlayerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import com.game.utils.InvalidRequestException;
+import com.game.utils.PlayerValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.Errors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -21,10 +22,12 @@ import java.util.stream.Collectors;
 public class PlayerService {
     final private PlayerRepository playerRepository;
     final private PlayerCriteriaRepository criteriaRepository;
+    final private PlayerValidator playerValidator;
 
-    public PlayerService(PlayerRepository playerRepository, PlayerCriteriaRepository criteriaRepository) {
+    public PlayerService(PlayerRepository playerRepository, PlayerCriteriaRepository criteriaRepository, PlayerValidator playerValidator) {
         this.playerRepository = playerRepository;
         this.criteriaRepository = criteriaRepository;
+        this.playerValidator = playerValidator;
     }
 
     /*public List<Player> getAllPlayers() {
@@ -95,12 +98,18 @@ public class PlayerService {
         if (Objects.nonNull(order)) {
             players.sort((player1, player2) -> {
                 switch (order) {
-                    case ID: player1.getId().compareTo(player2.getId());
-                    case NAME: player1.getName().compareTo(player2.getName());
-                    case LEVEL: player1.getLevel().compareTo(player2.getLevel());
-                    case BIRTHDAY: player1.getBirthday().compareTo(player2.getBirthday());
-                    case EXPERIENCE: player1.getExperience().compareTo(player2.getExperience());
-                    default: return 0;
+                    case ID:
+                        player1.getId().compareTo(player2.getId());
+                    case NAME:
+                        player1.getName().compareTo(player2.getName());
+                    case LEVEL:
+                        player1.getLevel().compareTo(player2.getLevel());
+                    case BIRTHDAY:
+                        player1.getBirthday().compareTo(player2.getBirthday());
+                    case EXPERIENCE:
+                        player1.getExperience().compareTo(player2.getExperience());
+                    default:
+                        return 0;
                 }
             });
         }
@@ -119,10 +128,10 @@ public class PlayerService {
     }
 
     public Integer getCount(String name, String title,
-                                              Race race, Profession profession,
-                                              Long after, Long before, Boolean banned,
-                                              Integer minExperience, Integer maxExperience,
-                                              Integer minLevel, Integer maxLevel) {
+                            Race race, Profession profession,
+                            Long after, Long before, Boolean banned,
+                            Integer minExperience, Integer maxExperience,
+                            Integer minLevel, Integer maxLevel) {
         List<Player> players = playerRepository.findAll();
 
         if (Objects.nonNull(name)) {
@@ -159,5 +168,28 @@ public class PlayerService {
             players = players.stream().filter(player -> player.getLevel() <= maxLevel).collect(Collectors.toList());
         }
         return players.size();
+    }
+
+    @Transactional
+    public Player save(Player player, BindingResult bindingResult) {
+        playerValidator.validate(player, bindingResult);
+        if (bindingResult.hasErrors()) {
+            throw new InvalidRequestException("Invalid request");
+        }
+        if (Objects.isNull(player.getBanned())) {
+            player.setBanned(false);
+        }
+        if (Objects.nonNull(player.getId())) {
+            player.setId(null);
+        }
+        return playerRepository.save(expAndLevelCalculations(player));
+    }
+
+    private Player expAndLevelCalculations(Player player) {
+        Integer currLevel = (int) ((Math.sqrt(2500 + 200 * player.getExperience()) - 50) / 100);
+        Integer untilNextLevel = (50 * (currLevel + 1) * (currLevel + 2)) - player.getExperience();
+        player.setLevel(currLevel);
+        player.setUntilNextLevel(untilNextLevel);
+        return player;
     }
 }
