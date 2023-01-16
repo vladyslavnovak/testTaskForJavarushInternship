@@ -1,5 +1,6 @@
 package com.game.controller;
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
@@ -74,8 +75,21 @@ public class PlayerController {
     }
 
     @GetMapping("/players/{id}")
-    public ResponseEntity<Player> getPlayerById(@PathVariable("id") Integer id) {
+    public ResponseEntity<Player> getPlayerById(@PathVariable("id") Long id) {
         return new ResponseEntity<>(playerService.getPlayerById(id), HttpStatus.OK);
+    }
+
+    @PostMapping("/players/{id}")
+    public ResponseEntity<Player> updatePlayer(@PathVariable("id") Long id,
+                                               @RequestBody(required = false) Player updatedPlayer,
+                                               BindingResult bindingResult) {
+        return new ResponseEntity<>(playerService.updatePlayer(id, updatedPlayer, bindingResult), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/players/{id}")
+    public ResponseEntity<HttpStatus> deletePlayer(@PathVariable ("id") Long id) {
+        playerService.delete(id);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @ExceptionHandler
