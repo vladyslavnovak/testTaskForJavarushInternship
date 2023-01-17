@@ -29,12 +29,6 @@ public class UpdatedPlayerValidator implements Validator {
         if (Objects.nonNull(player.getTitle()) && (player.getTitle().isEmpty() || player.getTitle().length() > 30)) {
             errors.reject("not valid title");
         }
-        /*if (Objects.isNull(player.getRace())) {
-            errors.reject("race should not be null");
-        }
-        if (Objects.isNull(player.getProfession())) {
-            errors.reject("profession should not be null");
-        }*/
         if (Objects.nonNull(player.getBirthday()) && player.getBirthday().getTime() < 0) {
             errors.reject("not valid birthday");
         }

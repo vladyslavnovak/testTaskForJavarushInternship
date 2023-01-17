@@ -1,18 +1,12 @@
 package com.game.repository;
 
-import com.game.controller.PlayerOrder;
 import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.domain.*;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceUnit;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -25,11 +19,10 @@ import java.util.Objects;
 
 @Repository
 public class PlayerCriteriaRepository {
-    @PersistenceContext
     private EntityManager entityManager;
     private CriteriaBuilder criteriaBuilder;
 
-    public PlayerCriteriaRepository(@Qualifier(value = "entityManagerFactory") LocalContainerEntityManagerFactoryBean entityManager) {
+    public PlayerCriteriaRepository(LocalContainerEntityManagerFactoryBean entityManager) {
         this.entityManager = entityManager.getNativeEntityManagerFactory().createEntityManager();
         this.criteriaBuilder = this.entityManager.getCriteriaBuilder();
     }
@@ -38,33 +31,15 @@ public class PlayerCriteriaRepository {
                                            Race race, Profession profession,
                                            Long after, Long before, Boolean banned,
                                            Integer minExperience, Integer maxExperience,
-                                           Integer minLevel, Integer maxLevel,
-                                           Integer pageNumber, Integer pageSize, PlayerOrder order) {
+                                           Integer minLevel, Integer maxLevel) {
 
         CriteriaQuery<Player> criteriaQuery = criteriaBuilder.createQuery(Player.class);
         Root<Player> playerRoot = criteriaQuery.from(Player.class);
         Predicate predicate = getPredicate(name, title, race, profession, after, before,
                 banned, minExperience, maxExperience, minLevel, maxLevel, playerRoot);
         criteriaQuery.where(predicate);
-
-
-        if (Objects.nonNull(order)) {
-            setOrder(order, criteriaQuery, playerRoot);
-        }
         TypedQuery<Player> typedQuery = entityManager.createQuery(criteriaQuery);
-        //if (Objects.nonNull(pageNumber) && Objects.nonNull(pageSize)) {
-        typedQuery.setFirstResult(pageNumber * pageSize);
-        typedQuery.setMaxResults(pageSize);
         return typedQuery.getResultList();
-        //}
-        /*Pageable pageable = getPagebale(pageNumber, pageSize, order);
-        Long playersCount = getPlayersCount(predicate);
-        return new PageImpl<>(typedQuery.getResultList(), pageable, playersCount);*/
-    }
-
-    private Pageable getPagebale(Integer pageNumber, Integer pageSize, PlayerOrder order) {
-        Sort sort = Sort.by(order.getFieldName());
-        return null;
     }
 
     private Predicate getPredicate(String name, String title, Race race, Profession profession,
@@ -109,16 +84,5 @@ public class PlayerCriteriaRepository {
         }
 
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-    }
-
-    private void setOrder(PlayerOrder order, CriteriaQuery<Player> criteriaQuery, Root<Player> playerRoot) {
-        criteriaQuery.orderBy(criteriaBuilder.asc(playerRoot.get(order.getFieldName())));
-    }
-
-    private Long getPlayersCount(Predicate predicate) {
-        CriteriaQuery<Long> longCriteriaQuery = criteriaBuilder.createQuery(Long.class);
-        Root<Player> countRoot = longCriteriaQuery.from(Player.class);
-        longCriteriaQuery.select(criteriaBuilder.count(countRoot)).where(predicate);
-        return entityManager.createQuery(longCriteriaQuery).getSingleResult();
     }
 }

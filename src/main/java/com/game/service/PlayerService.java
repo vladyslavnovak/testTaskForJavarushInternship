@@ -8,18 +8,15 @@ import com.game.repository.PlayerCriteriaRepository;
 import com.game.repository.PlayerRepository;
 import com.game.utils.PlayerValidator;
 import com.game.utils.UpdatedPlayerValidator;
+import org.springframework.beans.support.MutableSortDefinition;
+import org.springframework.beans.support.PagedListHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class PlayerService {
@@ -28,108 +25,31 @@ public class PlayerService {
     final private PlayerValidator playerValidator;
     final private UpdatedPlayerValidator updatedPlayerValidator;
 
-    public PlayerService(PlayerRepository playerRepository, PlayerCriteriaRepository criteriaRepository, PlayerValidator playerValidator, UpdatedPlayerValidator updatedPlayerValidator) {
+    public PlayerService(PlayerRepository playerRepository, PlayerCriteriaRepository criteriaRepository,
+                         PlayerValidator playerValidator, UpdatedPlayerValidator updatedPlayerValidator) {
         this.playerRepository = playerRepository;
         this.criteriaRepository = criteriaRepository;
         this.playerValidator = playerValidator;
         this.updatedPlayerValidator = updatedPlayerValidator;
     }
 
-    /*public List<Player> getAllPlayers() {
-        return playerRepository.findAll();
-    }*/
+    public List<Player> findAllPlayersWithFilters(String name, String title,
+                                                  Race race, Profession profession,
+                                                  Long after, Long before, Boolean banned,
+                                                  Integer minExperience, Integer maxExperience,
+                                                  Integer minLevel, Integer maxLevel,
+                                                  Integer pageNumber, Integer pageSize, PlayerOrder order) {
 
-    /*public List<Player> filterBySpec(String name, String title,
-                                     Race race, Profession profession,
-                                     Long after, Long before, Boolean banned,
-                                     Integer minExperience, Integer maxExperience,
-                                     Integer minLevel, Integer maxLevel, Integer pageNumber, Integer pageSize, PlayerOrder order) {
+        List<Player> players = criteriaRepository.findAllWithFilters(
+                name, title, race, profession, after, before, banned,
+                minExperience, maxExperience, minLevel, maxLevel);
 
+        PagedListHolder<Player> playerPagedListHolder = new PagedListHolder<>(players,
+                new MutableSortDefinition(order.getFieldName(), true, true));
+        playerPagedListHolder.setPage(pageNumber);
+        playerPagedListHolder.setPageSize(pageSize);
 
-        return null;
-
-    }*/
-
-    public List<Player> getPlayers(String name, String title,
-                                   Race race, Profession profession,
-                                   Long after, Long before, Boolean banned,
-                                   Integer minExperience, Integer maxExperience,
-                                   Integer minLevel, Integer maxLevel, Integer pageNumber, Integer pageSize, PlayerOrder order) {
-        return criteriaRepository.findAllWithFilters(name, title, race, profession, after, before, banned,
-                minExperience, maxExperience, minLevel, maxLevel, pageNumber, pageSize, order);
-    }
-
-    public List<Player> getPlayersWithStreams(String name, String title,
-                                              Race race, Profession profession,
-                                              Long after, Long before, Boolean banned,
-                                              Integer minExperience, Integer maxExperience,
-                                              Integer minLevel, Integer maxLevel, Integer pageNumber, Integer pageSize, PlayerOrder order) {
-        List<Player> players = playerRepository.findAll();
-
-        if (Objects.nonNull(name)) {
-            players = players.stream().filter(player -> player.getName().contains(name)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(title)) {
-            players = players.stream().filter(player -> player.getTitle().contains(title)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(race)) {
-            players = players.stream().filter(player -> player.getRace().equals(race)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(profession)) {
-            players = players.stream().filter(player -> player.getProfession().equals(profession)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(after)) {
-            players = players.stream().filter(player -> player.getBirthday().after(new Date(after))).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(before)) {
-            players = players.stream().filter(player -> player.getBirthday().before(new Date(before))).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(banned)) {
-            players = players.stream().filter(player -> player.getBanned().equals(banned)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(minExperience)) {
-            players = players.stream().filter(player -> player.getExperience() >= minExperience).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(maxExperience)) {
-            players = players.stream().filter(player -> player.getExperience() <= maxExperience).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(minLevel)) {
-            players = players.stream().filter(player -> player.getLevel() >= minLevel).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(maxLevel)) {
-            players = players.stream().filter(player -> player.getLevel() <= maxLevel).collect(Collectors.toList());
-        }
-
-        if (Objects.nonNull(order)) {
-            players.sort((player1, player2) -> {
-                switch (order) {
-                    case ID:
-                        player1.getId().compareTo(player2.getId());
-                    case NAME:
-                        player1.getName().compareTo(player2.getName());
-                    case LEVEL:
-                        player1.getLevel().compareTo(player2.getLevel());
-                    case BIRTHDAY:
-                        player1.getBirthday().compareTo(player2.getBirthday());
-                    case EXPERIENCE:
-                        player1.getExperience().compareTo(player2.getExperience());
-                    default:
-                        return 0;
-                }
-            });
-        }
-
-        Integer page = pageNumber == null ? 0 : pageNumber;
-        Integer size = pageSize == null ? 3 : pageSize;
-
-        int from = page * size;
-        int to = from + size;
-
-        if (to > players.size()) {
-            to = players.size();
-        }
-        players = players.subList(from, to);
-        return players;
+        return playerPagedListHolder.getPageList();
     }
 
     public Integer getCount(String name, String title,
@@ -137,45 +57,10 @@ public class PlayerService {
                             Long after, Long before, Boolean banned,
                             Integer minExperience, Integer maxExperience,
                             Integer minLevel, Integer maxLevel) {
-        List<Player> players = playerRepository.findAll();
-
-        if (Objects.nonNull(name)) {
-            players = players.stream().filter(player -> player.getName().contains(name)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(title)) {
-            players = players.stream().filter(player -> player.getTitle().contains(title)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(race)) {
-            players = players.stream().filter(player -> player.getRace().equals(race)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(profession)) {
-            players = players.stream().filter(player -> player.getProfession().equals(profession)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(after)) {
-            players = players.stream().filter(player -> player.getBirthday().after(new Date(after))).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(before)) {
-            players = players.stream().filter(player -> player.getBirthday().before(new Date(before))).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(banned)) {
-            players = players.stream().filter(player -> player.getBanned().equals(banned)).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(minExperience)) {
-            players = players.stream().filter(player -> player.getExperience() >= minExperience).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(maxExperience)) {
-            players = players.stream().filter(player -> player.getExperience() <= maxExperience).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(minLevel)) {
-            players = players.stream().filter(player -> player.getLevel() >= minLevel).collect(Collectors.toList());
-        }
-        if (Objects.nonNull(maxLevel)) {
-            players = players.stream().filter(player -> player.getLevel() <= maxLevel).collect(Collectors.toList());
-        }
-        return players.size();
+        return criteriaRepository.findAllWithFilters(name, title, race, profession, after, before, banned,
+                minExperience, maxExperience, minLevel, maxLevel).size();
     }
 
-    @Transactional
     public Player save(Player player, BindingResult bindingResult) {
         playerValidator.validate(player, bindingResult);
         if (bindingResult.hasErrors()) {
@@ -184,10 +69,10 @@ public class PlayerService {
         if (Objects.isNull(player.getBanned())) {
             player.setBanned(false);
         }
-        return playerRepository.save(expAndLevelCalculations(player));
+        return playerRepository.save(experienceAndLevelCalculations(player));
     }
 
-    private Player expAndLevelCalculations(Player player) {
+    private Player experienceAndLevelCalculations(Player player) {
         int currLevel = (int) ((Math.sqrt(2500 + 200 * player.getExperience()) - 50) / 100);
         int untilNextLevel = (50 * (currLevel + 1) * (currLevel + 2)) - player.getExperience();
         player.setLevel(currLevel);
@@ -204,7 +89,6 @@ public class PlayerService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    @Transactional
     public Player updatePlayer(Long id, Player updatedPlayer, BindingResult bindingResult) {
 
         Player player = getPlayerById(id);
@@ -241,7 +125,7 @@ public class PlayerService {
             player.setExperience(updatedPlayer.getExperience());
         }
 
-        expAndLevelCalculations(player);
+        experienceAndLevelCalculations(player);
 
         return playerRepository.save(player);
     }

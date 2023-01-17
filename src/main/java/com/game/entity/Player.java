@@ -117,19 +117,4 @@ public class Player {
         this.banned = banned;
     }
 
-    @Override
-    public String toString() {
-        return "Player{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", title='" + title + '\'' +
-                ", race=" + race +
-                ", profession=" + profession +
-                ", experience=" + experience +
-                ", level=" + level +
-                ", untilNextLevel=" + untilNextLevel +
-                ", birthday=" + birthday +
-                ", banned=" + banned +
-                '}';
-    }
 }
